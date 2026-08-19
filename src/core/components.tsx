@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { formatBytes } from './utils/image'
 
 interface DropZoneProps {
-  onFile: (file: File) => void
+  onFile?: (file: File) => void
+  onFiles?: (files: File[]) => void
+  multiple?: boolean
   accept?: string
   label?: string
   hint?: string
@@ -58,9 +60,12 @@ export function usePasteImport(onFile: (file: File) => void, accept = 'image/') 
 }
 
 /** 通用拖拽/点击取文件区，所有工具复用；并支持 Ctrl/⌘+V 粘贴导入 */
-export function DropZone({ onFile, accept, label, hint }: DropZoneProps) {
+export function DropZone({ onFile, onFiles, multiple, accept, label, hint }: DropZoneProps) {
   const [drag, setDrag] = useState(false)
-  usePasteImport((f) => onFile(f), accept)
+  usePasteImport((f) => {
+    if (multiple && onFiles) onFiles([f])
+    else onFile?.(f)
+  }, accept)
   return (
     <label
       className={`dropzone${drag ? ' dragover' : ''}`}
@@ -72,24 +77,33 @@ export function DropZone({ onFile, accept, label, hint }: DropZoneProps) {
       onDrop={(e) => {
         e.preventDefault()
         setDrag(false)
-        const f = e.dataTransfer.files?.[0]
-        if (f) onFile(f)
+        const fs = e.dataTransfer.files
+        if (multiple && onFiles && fs && fs.length > 1) onFiles(Array.from(fs))
+        else {
+          const f = fs?.[0]
+          if (f) onFile?.(f)
+        }
       }}
     >
       <input
         type="file"
         accept={accept}
+        multiple={multiple}
         hidden
         onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) onFile(f)
+          const fs = e.target.files
+          if (multiple && onFiles && fs && fs.length > 0) onFiles(Array.from(fs))
+          else {
+            const f = fs?.[0]
+            if (f) onFile?.(f)
+          }
           e.target.value = ''
         }}
       />
       <div className="dropzone-inner">
         <span className="dropzone-icon">⬆️</span>
         <span>{label ?? '点击、拖拽，或 Ctrl/⌘+V 粘贴图片到此处'}</span>
-        <span className="dropzone-hint">{hint ?? '所有处理均在本地浏览器完成，文件不会上传'}</span>
+        <span className="dropzone-hint">{hint}</span>
       </div>
     </label>
   )

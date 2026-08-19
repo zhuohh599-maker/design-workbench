@@ -51,7 +51,7 @@ export function App() {
             </div>
           ))}
         </nav>
-        <div className="sidebar-foot">纯前端 · 本地处理 · 文件不上传</div>
+        <div className="sidebar-foot">纯前端设计小工具</div>
       </aside>
 
       <main className="main">

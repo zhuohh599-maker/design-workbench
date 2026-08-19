@@ -8,6 +8,7 @@ import {
   AnimakerIcon,
   ChromakeyIcon,
   RoundedIcon,
+  VectorizeIcon,
 } from './icons'
 
 /**
@@ -59,10 +60,19 @@ export const tools: ToolDef[] = [
     component: lazy(() => import('../tools/rounded/RoundedTool')),
   },
   {
+    id: 'vectorize',
+    name: '图片转矢量',
+    icon: VectorizeIcon,
+    description: '位图描摹，输出可缩放 SVG 矢量路径',
+    group: '图片处理',
+    enabled: true,
+    component: lazy(() => import('../tools/vectorize/VectorizeTool')),
+  },
+  {
     id: 'matting',
     name: 'AI 抠图',
     icon: MattingIcon,
-    description: '本地 AI 去背景，输出透明 PNG',
+    description: 'AI 去背景，输出透明 PNG',
     group: 'AI 工具',
     enabled: true,
     component: lazy(() => import('../tools/matting/MattingTool')),

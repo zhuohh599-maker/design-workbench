@@ -55,3 +55,12 @@ export const RoundedIcon: FC<IconProps> = (props) => (
     <rect x="3" y="3" width="18" height="18" rx="6" />
   </svg>
 )
+
+export const VectorizeIcon: FC<IconProps> = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M3 18C7 6 17 6 21 18" />
+    <circle cx="3" cy="18" r="1.6" fill="currentColor" stroke="none" />
+    <circle cx="21" cy="18" r="1.6" fill="currentColor" stroke="none" />
+  </svg>
+)
+

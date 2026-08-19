@@ -331,7 +331,7 @@ export default function ChromakeyVideoTool() {
   return (
     <ToolLayout
       title="绿幕视频抠像"
-      description="上传绿幕 MP4，逐帧扣除绿幕（角落水印可框选抹除），再把透明结果摆到自定义尺寸画布上导出透明 GIF。纯浏览器处理，视频不上传。"
+      description="上传绿幕 MP4，逐帧扣除绿幕（角落水印可框选抹除），再把透明结果摆到自定义尺寸画布上导出透明 GIF。"
     >
       <div className="card">
         {/* 隐藏的视频解码源：用 <video> 逐帧 drawImage 到 Canvas 抠像（离屏定位，避免部分浏览器对 display:none 暂停解码） */}
@@ -366,7 +366,7 @@ export default function ChromakeyVideoTool() {
             <div className="dropzone-inner">
               <span className="dropzone-icon">🟢</span>
               <span>点击或拖拽绿幕 MP4 到此处</span>
-              <span className="dropzone-hint">支持 H.264 MP4；处理在本地完成</span>
+              <span className="dropzone-hint">支持 H.264 MP4</span>
             </div>
           </label>
         )}
