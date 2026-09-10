@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, DropZone, Section, Slider, CompressControls, useSmartCompress, usePasteImport } from '../../core/components'
 import { loadImageFromFile, downloadBlob, blobExt, formatBytes } from '../../core/utils/image'
-import { encodeGif, encodeApng, type GifFrame } from '../../core/utils/gif'
+import { encodeApng, type GifFrame } from '../../core/utils/gif'
 
 type EffectKind = 'pulse' | 'slide' | 'shimmer' | 'fade' | 'spin'
 
@@ -161,8 +161,10 @@ export default function AnimakerTool() {
   const [playing, setPlaying] = useState(false)
   const [busy, setBusy] = useState(false)
   const [tip, setTip] = useState('')
+  const [tipKind, setTipKind] = useState<'info' | 'success' | 'error'>('info')
+  const [progress, setProgress] = useState(0)
   const [addKind, setAddKind] = useState<EffectKind>('pulse')
-  const [dither, setDither] = useState(true)
+  const [dither, setDither] = useState(false)
   const c = useSmartCompress()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const offRef = useRef<Offscreen | null>(null)
@@ -415,15 +417,45 @@ export default function AnimakerTool() {
   async function exportGif() {
     if (layers.length === 0) return
     setBusy(true)
-    setTip('正在渲染 GIF 帧…')
+    setTipKind('info')
+    setTip('准备导出…')
+    setProgress(5)
     try {
       const frames = collectFrames()
-      let blob = encodeGif({ width: boardW, height: boardH, frames, transparent: bg === 'transparent', paletteSize: 256, dither })
-      blob = await c.run(blob)
-      const ext = blobExt(blob)
-      downloadBlob(blob, `animaker-${boardW}x${boardH}${bg === 'transparent' ? '-alpha' : ''}.${ext}`)
-      setTip(`GIF 导出完成：${frames.length} 帧 · ${formatBytes(blob.size)}${c.compress ? ' · 已智能压缩' : ''}`)
+      setTip('后台生成 APNG 并转码为 GIF…')
+      // 把帧的 ArrayBuffer 转移给 Worker，避免大块内存拷贝、主线程不卡顿
+      const transfer = frames.map((f) => f.rgba.buffer)
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        const worker = new Worker(new URL('../../core/utils/gifWorker.ts', import.meta.url), { type: 'module' })
+        worker.onmessage = (ev: MessageEvent) => {
+          if (ev.data?.type === 'progress') {
+            setTip(ev.data.text || '处理中…')
+            setProgress(ev.data.percent || 0)
+            return
+          }
+          worker.terminate()
+          if (ev.data?.ok) resolve(new Blob([ev.data.bytes], { type: 'image/gif' }))
+          else reject(new Error(ev.data?.error || 'GIF 转码失败'))
+        }
+        worker.onerror = (err) => {
+          worker.terminate()
+          reject(new Error(err.message || 'GIF Worker 异常'))
+        }
+        worker.postMessage(
+          { width: boardW, height: boardH, frames, transparent: bg === 'transparent', paletteSize: 256, dither },
+          transfer,
+        )
+      })
+      setTip('智能压缩中…')
+      setProgress(95)
+      let out = await c.run(blob)
+      setProgress(100)
+      const ext = blobExt(out)
+      downloadBlob(out, `animaker-${boardW}x${boardH}${bg === 'transparent' ? '-alpha' : ''}.${ext}`)
+      setTipKind('success')
+      setTip(`GIF 导出完成：${frames.length} 帧 · ${formatBytes(out.size)}${c.compress ? ' · 已智能压缩' : ''}（经 APNG→GIF 转码，仍为 256 色，需真彩请用 APNG）`)
     } catch (e) {
+      setTipKind('error')
       setTip('导出失败：' + (e as Error).message)
     } finally {
       setBusy(false)
@@ -433,15 +465,23 @@ export default function AnimakerTool() {
   async function exportApng() {
     if (layers.length === 0) return
     setBusy(true)
+    setTipKind('info')
     setTip('正在渲染 APNG 帧…')
+    setProgress(10)
     try {
       const frames = collectFrames()
+      setProgress(50)
       let blob = encodeApng({ width: boardW, height: boardH, frames, cnum: 0 })
+      setTip('智能压缩中…')
+      setProgress(80)
       blob = await c.run(blob)
+      setProgress(100)
       const ext = blobExt(blob)
       downloadBlob(blob, `animaker-${boardW}x${boardH}${bg === 'transparent' ? '-alpha' : ''}.${ext}`)
+      setTipKind('success')
       setTip(`APNG 导出完成：${frames.length} 帧 · ${formatBytes(blob.size)} · 真彩色透明${c.compress ? ' · 已智能压缩' : ''}`)
     } catch (e) {
+      setTipKind('error')
       setTip('导出失败：' + (e as Error).message)
     } finally {
       setBusy(false)
@@ -563,7 +603,7 @@ export default function AnimakerTool() {
         )}
 
         <Section title="导出">
-          <Slider label="时长" min={1} max={10} value={duration} onChange={setDuration} suffix="s" />
+          <Slider label="时长" min={1} max={10} step={0.5} value={duration} onChange={setDuration} suffix="s" />
           <Slider label="帧率" min={8} max={30} value={fps} onChange={setFps} suffix="fps" />
           <div className="field">
             <label>背景通道</label>
@@ -573,16 +613,25 @@ export default function AnimakerTool() {
               <option value="#000000">黑色实底</option>
             </select>
           </div>
+          <label className="check">
+            <input type="checkbox" checked={dither} onChange={(e) => setDither(e.target.checked)} />
+            抖动（关闭更平滑；开启保留半透明羽化边缘的小点）
+          </label>
           <CompressControls compress={c.compress} setCompress={c.setCompress} quality={c.quality} setQuality={c.setQuality} />
           <button className="btn primary block" disabled={layers.length === 0 || busy} onClick={exportGif}>
-            ⬇ 导出 GIF
+            {busy ? '导出中…' : '⬇ 导出 GIF'}
           </button>
           <button className="btn block" disabled={layers.length === 0 || busy} onClick={exportApng} style={{ marginTop: 8 }}>
-            ⬇ 导出 APNG
+            {busy ? '导出中…' : '⬇ 导出 APNG'}
           </button>
           <div className="hint" style={{ marginTop: 8 }}>需要真彩色透明边缘时选 APNG。</div>
-          {busy && <div className="progress" style={{ marginTop: 10 }}><i style={{ width: '70%' }} /></div>}
-          {tip && <div className="hint">{tip}</div>}
+          {busy && (
+            <div className="progress" style={{ marginTop: 12 }} title={tip}>
+              <i style={{ width: `${Math.max(5, Math.min(100, progress))}%` }} />
+            </div>
+          )}
+          {busy && tip && <div className="hint" style={{ marginTop: 6 }}>{tip}</div>}
+          {!busy && tip && <div className={`hint ${tipKind}`}>{tip}</div>}
         </Section>
       </div>
     </ToolLayout>

@@ -499,6 +499,20 @@ input[type='text'] {
   margin-top: 8px;
   line-height: 1.5;
 }
+.hint.error {
+  color: #ef4444;
+  font-weight: 500;
+  background: rgba(239, 68, 68, 0.12);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.hint.success {
+  color: #22c55e;
+  font-weight: 500;
+  background: rgba(34, 197, 94, 0.12);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
 .corner-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
