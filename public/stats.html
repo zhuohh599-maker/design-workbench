@@ -44,6 +44,7 @@
     <div class="wrap">
       <h1>设计工作台 · 使用统计</h1>
       <div class="sub">数据来自 Netlify Blobs，由 /track 接口累计。仅部署者可见。</div>
+      <div class="sub" id="updated" style="margin-top:-14px;">数据时间：–</div>
 
       <div class="keyrow">
         <input id="key" placeholder="STATS_KEY（若已设置，必填）" />
@@ -78,6 +79,7 @@
           if (r.status === 401) { $('err').textContent = '未授权：请填写正确的 STATS_KEY'; return }
           if (!r.ok) { $('err').textContent = '加载失败：' + r.status; return }
           const d = await r.json()
+          $('updated').textContent = '数据时间：' + (d.updatedAt ? new Date(d.updatedAt).toLocaleString() : '–')
           $('c-total').textContent = d.total ?? 0
           $('c-users').textContent = d.users ?? 0
           const byTool = d.byTool || {}

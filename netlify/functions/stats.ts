@@ -19,7 +19,8 @@ export default async (req: Request) => {
   }
   try {
     const store = getStore({ name: 'stats' })
-    const agg = ((await store.get('agg', { type: 'json' })) as Agg | null) || {
+    // 用强一致读取，避免边缘缓存最多 60s 的滞后导致看板“不更新”
+    const agg = ((await store.get('agg', { type: 'json', consistency: 'strong' })) as Agg | null) || {
       total: 0,
       byTool: {},
       users: [],
@@ -30,6 +31,7 @@ export default async (req: Request) => {
       users: Array.isArray(agg.users) ? agg.users.length : 0,
       byTool: agg.byTool || {},
       byDay: agg.byDay || {},
+      updatedAt: new Date().toISOString(),
     }
     return new Response(JSON.stringify(out), {
       status: 200,
