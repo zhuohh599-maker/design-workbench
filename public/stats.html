@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>设计工作台 · 使用统计</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: #0f172a; color: #e2e8f0; padding: 32px 20px;
+      }
+      .wrap { max-width: 760px; margin: 0 auto; }
+      h1 { font-size: 22px; margin: 0 0 4px; }
+      .sub { color: #94a3b8; font-size: 13px; margin-bottom: 24px; }
+      .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+      .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; }
+      .card .n { font-size: 28px; font-weight: 700; color: #38bdf8; }
+      .card .l { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+      .bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+      .bar .name { width: 120px; font-size: 14px; }
+      .bar .track { flex: 1; height: 10px; background: #1e293b; border-radius: 6px; overflow: hidden; }
+      .bar .fill { height: 100%; background: linear-gradient(90deg,#38bdf8,#818cf8); }
+      .bar .v { width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #334155; }
+      th { color: #94a3b8; font-weight: 600; }
+      td.num { text-align: right; font-variant-numeric: tabular-nums; }
+      .keyrow { display: flex; gap: 8px; margin-bottom: 20px; }
+      input {
+        flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #334155;
+        background: #0b1220; color: #e2e8f0; font-size: 14px;
+      }
+      button {
+        padding: 8px 16px; border-radius: 8px; border: 0; cursor: pointer;
+        background: #38bdf8; color: #0b1220; font-weight: 600;
+      }
+      .err { color: #f87171; font-size: 13px; min-height: 18px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>设计工作台 · 使用统计</h1>
+      <div class="sub">数据来自 Netlify Blobs，由 /track 接口累计。仅部署者可见。</div>
+
+      <div class="keyrow">
+        <input id="key" placeholder="STATS_KEY（若已设置，必填）" />
+        <button id="load">刷新</button>
+      </div>
+      <div class="err" id="err"></div>
+
+      <div class="cards">
+        <div class="card"><div class="n" id="c-total">–</div><div class="l">总使用次数</div></div>
+        <div class="card"><div class="n" id="c-users">–</div><div class="l">使用人数（去重）</div></div>
+        <div class="card"><div class="n" id="c-tools">–</div><div class="l">活跃工具数</div></div>
+      </div>
+
+      <h3 style="font-size:15px;color:#cbd5e1;">各工具使用次数</h3>
+      <div id="bars"></div>
+
+      <h3 style="font-size:15px;color:#cbd5e1;margin-top:24px;">每日趋势</h3>
+      <table>
+        <thead><tr><th>日期</th><th class="num">次数</th></tr></thead>
+        <tbody id="days"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id)
+      async function load() {
+        const key = $('key').value.trim()
+        const url = '/.netlify/functions/stats' + (key ? '?key=' + encodeURIComponent(key) : '')
+        $('err').textContent = ''
+        try {
+          const r = await fetch(url)
+          if (r.status === 401) { $('err').textContent = '未授权：请填写正确的 STATS_KEY'; return }
+          if (!r.ok) { $('err').textContent = '加载失败：' + r.status; return }
+          const d = await r.json()
+          $('c-total').textContent = d.total ?? 0
+          $('c-users').textContent = d.users ?? 0
+          const byTool = d.byTool || {}
+          const entries = Object.entries(byTool).sort((a, b) => b[1] - a[1])
+          $('c-tools').textContent = entries.length
+          const max = entries.length ? entries[0][1] : 1
+          $('bars').innerHTML = entries
+            .map(
+              ([name, v]) =>
+                '<div class="bar"><div class="name">' + name +
+                '</div><div class="track"><div class="fill" style="width:' +
+                (v / max * 100).toFixed(1) + '%"></div></div>' +
+                '<div class="v">' + v + '</div></div>'
+            )
+            .join('')
+          const days = Object.entries(d.byDay || {}).sort()
+          $('days').innerHTML = days
+            .map(([day, v]) => '<tr><td>' + day + '</td><td class="num">' + v + '</td></tr>')
+            .join('')
+        } catch (e) {
+          $('err').textContent = '请求错误：' + e.message
+        }
+      }
+      $('load').addEventListener('click', load)
+      load()
+    </script>
+  </body>
+</html>

@@ -797,3 +797,159 @@ input[type='text'] {
   background: rgba(255, 255, 255, 0.28);
 }
 
+/* ---------- 侧边栏（扩展）拖拽层 & 提示 ---------- */
+.app--compact {
+  height: 100%;
+}
+
+/* 扩展侧边栏：右侧固定竖向图标栏（图标 + 小标题），无折叠按钮 */
+.app--compact {
+  display: flex;
+  flex-direction: row-reverse;
+  height: 100%;
+}
+.app--compact .sidebar {
+  width: 80px;
+  flex: 0 0 80px;
+  border-right: none;
+  border-left: 1px solid var(--border);
+  padding: 10px 6px;
+  align-items: stretch;
+}
+.app--compact .brand {
+  justify-content: center;
+  padding: 4px 0 12px;
+}
+.app--compact .brand-text,
+.app--compact .sidebar-foot,
+.app--compact .nav-group-title {
+  display: none;
+}
+.app--compact .brand-mark {
+  width: 28px;
+  height: 28px;
+}
+.app--compact .nav {
+  padding: 0;
+}
+.app--compact .nav-group {
+  margin-bottom: 10px;
+}
+.app--compact .nav-item {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 2px;
+  text-align: center;
+  border-radius: 8px;
+}
+.app--compact .nav-icon {
+  width: 22px;
+  height: 22px;
+}
+.app--compact .nav-name {
+  display: block;
+  font-size: 10px;
+  line-height: 1.15;
+  white-space: normal;
+  word-break: break-all;
+}
+
+/* 扩展主区：上下结构 —— 上为拖拽/预览，下为参数与按钮 */
+.app--compact .main {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 14px 16px;
+  overflow: hidden;
+}
+.app--compact .tool {
+  height: 100%;
+}
+.app--compact .tool-header h2 {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+.app--compact .tool-header p {
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+/* 扩展主区：上下结构 —— 上为拖拽/预览，下为参数与按钮
+   上区弹性占据剩余空间（随窗口尺寸伸缩），下区按内容自适应 */
+.app--compact .tool-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* 覆盖基础样式的 start，让上卡占满宽度 */
+  gap: 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+.app--compact .tool-body > .card {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+/* 预览框填满卡片剩余空间；图片按窗口高度缩放（不超 42vh） */
+.app--compact .tool-body .preview {
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow: auto;
+}
+.app--compact .tool-body .card > .dropzone {
+  flex: 1 1 auto;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.app--compact .preview img,
+.app--compact .preview canvas,
+.app--compact .preview video {
+  max-height: 42vh;
+}
+/* 参数/按钮区：按内容自适应，最高 55%，超出内部滚动 */
+.app--compact .tool-body > .panel {
+  flex: 0 1 auto;
+  max-height: 55%;
+  overflow: auto;
+  position: static;
+}
+.panel-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(80, 90, 200, 0.12);
+  backdrop-filter: blur(1px);
+  pointer-events: none;
+}
+.panel-drop-overlay .panel-drop-inner {
+  padding: 22px 28px;
+  border: 2px dashed var(--accent, #6d8bff);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--accent, #6d8bff);
+  font-weight: 700;
+  font-size: 16px;
+}
+.panel-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: 90%;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(20, 20, 30, 0.85);
+  color: #fff;
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+

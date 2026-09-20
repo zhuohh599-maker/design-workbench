@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, Section, Slider, CompressControls, useSmartCompress } from '../../core/components'
+import { useInboxHandler } from '../../core/inbox'
 import { downloadBlob, blobExt, formatBytes } from '../../core/utils/image'
 import { encodeGif, encodeApng, type GifFrame } from '../../core/utils/gif'
 
@@ -190,6 +191,8 @@ export default function ChromakeyVideoTool() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, meta])
+
+  useInboxHandler(onFile)
 
   async function onFile(f: File) {
     const v = videoRef.current!

@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, DropZone, Section, Slider } from '../../core/components'
+import { useInboxHandler } from '../../core/inbox'
 import { loadImageFromFile, canvasToBlob, downloadBlob, formatBytes } from '../../core/utils/image'
 import { ACCEPT_IMAGES } from '../../core/types'
 
@@ -34,6 +35,8 @@ export default function RoundedTool() {
   const [corners, setCorners] = useState<Corners>({ tl: 24, tr: 24, br: 24, bl: 24 })
   const [tip, setTip] = useState('')
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useInboxHandler(onFile)
 
   async function onFile(file: File) {
     const image = await loadImageFromFile(file)

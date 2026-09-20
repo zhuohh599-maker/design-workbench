@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, DropZone, Section, Slider } from '../../core/components'
+import { useInboxHandler } from '../../core/inbox'
 import { loadImageFromFile, loadImageFromBlob, canvasToBlob, downloadBlob, formatBytes, MIME_EXT } from '../../core/utils/image'
 import { decodeGif, encodeGif, type DecodedGif } from '../../core/utils/gif'
 import { qualityToPalette } from '../../core/utils/compress'
@@ -63,6 +64,8 @@ export default function CompressTool() {
   }
 
   // ===== 单张逻辑 =====
+  useInboxHandler(onFile)
+
   async function onFile(f: File) {
     setErr('')
     setFile(f)

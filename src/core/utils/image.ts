@@ -10,9 +10,9 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
     const url = URL.createObjectURL(file)
     const img = new Image()
     img.onload = () => resolve(img)
-    img.onerror = (e) => {
+    img.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(e)
+      reject(new Error(`图片加载失败（${file?.name || '未知文件'}），可能不是浏览器支持的图片格式`))
     }
     img.src = url
   })
@@ -27,9 +27,9 @@ export function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
       URL.revokeObjectURL(url)
       resolve(img)
     }
-    img.onerror = (e) => {
+    img.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(e)
+      reject(new Error(`图片解码失败（${blob?.type || '未知类型'}），可能不是浏览器支持的图片格式`))
     }
     img.src = url
   })

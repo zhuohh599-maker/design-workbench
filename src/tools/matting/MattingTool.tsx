@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { removeBackground } from '@imgly/background-removal'
 import JSZip from 'jszip'
 import { ToolLayout, DropZone, Section, CompressControls, useSmartCompress } from '../../core/components'
+import { useInboxHandler } from '../../core/inbox'
 import { formatBytes, downloadBlob, blobExt } from '../../core/utils/image'
 import { ACCEPT_IMAGES } from '../../core/types'
 
@@ -309,6 +310,8 @@ export default function MattingTool() {
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useInboxHandler(onFile)
 
   async function onFile(file: File) {
     setErr('')

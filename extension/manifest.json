@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "设计工作台",
+  "version": "0.1.0",
+  "description": "纯前端设计小工具工作台（侧边栏常驻）。可从任意网页拖拽图片/文件到工作区，或进行抠图、压缩、格式转换、动图制作等操作。",
+  "action": {
+    "default_title": "打开设计工作台"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["sidePanel", "contextMenus", "storage", "activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "web_accessible_resources": [
+    {
+      "resources": ["sidepanel.html", "assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

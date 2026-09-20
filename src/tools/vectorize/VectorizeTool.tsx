@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { traceDataUrl, getSVG, THRESHOLD_AUTO } from '@cadit-app/potrace-ts'
 import { ToolLayout, DropZone, Section } from '../../core/components'
+import { useInboxHandler } from '../../core/inbox'
 import { formatBytes, downloadBlob } from '../../core/utils/image'
 import { ACCEPT_IMAGES } from '../../core/types'
 
@@ -127,6 +128,8 @@ export default function VectorizeTool() {
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [work, autoThreshold, threshold, fgMode, turdsize, alphamax])
+
+  useInboxHandler(onFile)
 
   async function onFile(file: File) {
     setErr('')

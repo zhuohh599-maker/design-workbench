@@ -1,5 +1,6 @@
 node_modules
 dist
+dist-ext
 *.local
 .DS_Store
 .workbuddy/
