@@ -1,4 +1,5 @@
-import { Handler } from '@netlify/functions'
+// Functions v2 写法（export default）——v1（export const handler）运行时
+// 不注入 Netlify Blobs 环境，getStore 会抛 MissingBlobsEnvironmentError 导致 502
 import { getStore } from '@netlify/blobs'
 
 interface Agg {
@@ -10,12 +11,12 @@ interface Agg {
 
 const EMPTY: Agg = { total: 0, byTool: {}, users: [], byDay: {} }
 
-export const handler: Handler = async (req) => {
-  if (req.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' }
+export default async (req: Request) => {
+  if (req.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 })
   }
   try {
-    const data = JSON.parse(req.body || '{}') as {
+    const data = (await req.json().catch(() => ({}))) as {
       type?: string
       tool?: string
       uid?: string
@@ -34,9 +35,9 @@ export const handler: Handler = async (req) => {
     agg.byDay[day] = (agg.byDay[day] || 0) + 1
 
     await store.set('agg', JSON.stringify(agg))
-    return { statusCode: 204 }
+    return new Response(null, { status: 204 })
   } catch (e) {
     console.error('track error', e)
-    return { statusCode: 500, body: 'Internal Error' }
+    return new Response('Internal Error', { status: 500 })
   }
 }
