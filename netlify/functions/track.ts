@@ -1,5 +1,6 @@
-// Functions v2 写法（export default）——v1（export const handler）运行时
-// 不注入 Netlify Blobs 环境，getStore 会抛 MissingBlobsEnvironmentError 导致 502
+// Functions v2 写法（export default）
+// 注意：@netlify/blobs 必须是较新版本（>=6）才有 getStore 导出，
+// 旧版（1.x）会导致 "does not provide an export named 'getStore'" 运行时错误
 import { getStore } from '@netlify/blobs'
 
 interface Agg {
