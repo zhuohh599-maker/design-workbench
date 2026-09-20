@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, Section, Slider, CompressControls, useSmartCompress } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
+import { track } from '../../core/analytics'
 import { downloadBlob, blobExt, formatBytes } from '../../core/utils/image'
 import { encodeGif, encodeApng, type GifFrame } from '../../core/utils/gif'
 
@@ -195,6 +196,7 @@ export default function ChromakeyVideoTool() {
   useInboxHandler(onFile)
 
   async function onFile(f: File) {
+    track('file_load', 'chromakey')
     const v = videoRef.current!
     const url = URL.createObjectURL(f)
     v.src = url

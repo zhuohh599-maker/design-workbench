@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, DropZone, Section, Slider } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
+import { track } from '../../core/analytics'
 import { loadImageFromFile, canvasToBlob, downloadBlob, formatBytes } from '../../core/utils/image'
 import { ACCEPT_IMAGES } from '../../core/types'
 
@@ -39,6 +40,7 @@ export default function RoundedTool() {
   useInboxHandler(onFile)
 
   async function onFile(file: File) {
+    track('file_load', 'rounded')
     const image = await loadImageFromFile(file)
     setImg(image)
     setName(file.name)

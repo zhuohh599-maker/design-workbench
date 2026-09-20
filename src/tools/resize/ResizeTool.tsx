@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, DropZone, Section, Slider, CompressControls, useSmartCompress } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
+import { track } from '../../core/analytics'
 import { loadImageFromFile, canvasToBlob, downloadBlob, blobExt, formatBytes, drawCover, drawContain } from '../../core/utils/image'
 import { ACCEPT_IMAGES } from '../../core/types'
 
@@ -22,6 +23,7 @@ export default function ResizeTool() {
   useInboxHandler(onFile)
 
   async function onFile(file: File) {
+    track('file_load', 'resize')
     const image = await loadImageFromFile(file)
     setImg(image)
     setName(file.name)

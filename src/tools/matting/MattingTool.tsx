@@ -3,6 +3,7 @@ import { removeBackground } from '@imgly/background-removal'
 import JSZip from 'jszip'
 import { ToolLayout, DropZone, Section, CompressControls, useSmartCompress } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
+import { track } from '../../core/analytics'
 import { formatBytes, downloadBlob, blobExt } from '../../core/utils/image'
 import { ACCEPT_IMAGES } from '../../core/types'
 
@@ -314,6 +315,7 @@ export default function MattingTool() {
   useInboxHandler(onFile)
 
   async function onFile(file: File) {
+    track('file_load', 'matting')
     setErr('')
     setHasResult(false)
     setProgress(0)

@@ -70,6 +70,16 @@
 
     <script>
       const $ = (id) => document.getElementById(id)
+      const TOOL_NAMES = {
+        resize: '尺寸缩放',
+        convert: '格式转换',
+        compress: '智能压缩',
+        rounded: '图片圆角',
+        vectorize: '图片转矢量',
+        matting: 'AI 抠图',
+        animaker: '动图制作',
+        chromakey: '绿幕视频抠像',
+      }
       async function load() {
         const key = $('key').value.trim()
         const url = '/.netlify/functions/stats' + (key ? '?key=' + encodeURIComponent(key) : '')
@@ -89,7 +99,7 @@
           $('bars').innerHTML = entries
             .map(
               ([name, v]) =>
-                '<div class="bar"><div class="name">' + name +
+                '<div class="bar"><div class="name" title="' + name + '">' + (TOOL_NAMES[name] || name) +
                 '</div><div class="track"><div class="fill" style="width:' +
                 (v / max * 100).toFixed(1) + '%"></div></div>' +
                 '<div class="v">' + v + '</div></div>'

@@ -1,9 +1,8 @@
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useState } from 'react'
 import { toolsByGroup, tools } from './core/registry'
 import { DropZone } from './core/components'
 import { InboxProvider, PanelDropZone } from './core/inbox'
 import { PaletteIcon } from './core/icons'
-import { track } from './core/analytics'
 
 function Loader() {
   return <div className="loader">加载工具组件中…</div>
@@ -13,11 +12,7 @@ export function App({ compact = false }: { compact?: boolean }) {
   const [activeId, setActiveId] = useState(tools[0]?.id ?? '')
   const [collapsed, setCollapsed] = useState(false)
   const active = tools.find((t) => t.id === activeId && t.enabled)
-
-  // 每次切换到某个工具即上报一次使用事件（用于后台使用统计）
-  useEffect(() => {
-    if (activeId) track('tool_open', activeId)
-  }, [activeId])
+  // 使用统计口径：仅在实际「置入文件」时计数（各工具 onFile 内上报），打开工具不计数
 
   return (
     <InboxProvider>

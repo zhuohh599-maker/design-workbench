@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, DropZone, Section, Slider, CompressControls, useSmartCompress, usePasteImport } from '../../core/components'
 import { loadImageFromFile, downloadBlob, blobExt, formatBytes } from '../../core/utils/image'
 import { encodeApng, type GifFrame } from '../../core/utils/gif'
+import { track } from '../../core/analytics'
 
 type EffectKind = 'pulse' | 'slide' | 'shimmer' | 'fade' | 'spin'
 
@@ -253,6 +254,7 @@ export default function AnimakerTool() {
 
   async function addElements(files: FileList | File[]) {
     const list = Array.from(files)
+    if (list.length > 0) track('file_load', 'animaker')
     const newLayers: Layer[] = []
     for (const f of list) {
       const img = await loadImageFromFile(f)

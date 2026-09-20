@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, DropZone, Section, Slider } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
+import { track } from '../../core/analytics'
 import { loadImageFromFile, loadImageFromBlob, canvasToBlob, downloadBlob, formatBytes, MIME_EXT } from '../../core/utils/image'
 import { decodeGif, encodeGif, type DecodedGif } from '../../core/utils/gif'
 import { qualityToPalette } from '../../core/utils/compress'
@@ -67,6 +68,7 @@ export default function CompressTool() {
   useInboxHandler(onFile)
 
   async function onFile(f: File) {
+    track('file_load', 'compress')
     setErr('')
     setFile(f)
     setOrigBytes(f.size)
@@ -177,6 +179,7 @@ export default function CompressTool() {
   async function onFiles(files: File[]) {
     setErr('')
     if (files.length === 0) return
+    track('file_load', 'compress')
     setSourceFiles(files)
     clearBatchUrls()
     setBatch([])

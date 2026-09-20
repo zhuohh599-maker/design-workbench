@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { traceDataUrl, getSVG, THRESHOLD_AUTO } from '@cadit-app/potrace-ts'
 import { ToolLayout, DropZone, Section } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
+import { track } from '../../core/analytics'
 import { formatBytes, downloadBlob } from '../../core/utils/image'
 import { ACCEPT_IMAGES } from '../../core/types'
 
@@ -132,6 +133,7 @@ export default function VectorizeTool() {
   useInboxHandler(onFile)
 
   async function onFile(file: File) {
+    track('file_load', 'vectorize')
     setErr('')
     setSvg('')
     setEmpty(false)

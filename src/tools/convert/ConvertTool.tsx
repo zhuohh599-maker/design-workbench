@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { ToolLayout, DropZone, Section, Slider, CompressControls, useSmartCompress } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
+import { track } from '../../core/analytics'
 import { loadImageFromFile, canvasToBlob, downloadBlob, MIME_EXT, blobExt, formatBytes } from '../../core/utils/image'
 import { ACCEPT_IMAGES } from '../../core/types'
 
@@ -24,6 +25,7 @@ export default function ConvertTool() {
   useInboxHandler(onFile)
 
   async function onFile(file: File) {
+    track('file_load', 'convert')
     setWarn('')
     const image = await loadImageFromFile(file)
     setImg(image)
