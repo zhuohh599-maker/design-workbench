@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { ToolLayout, DropZone, Section, Slider, CompressControls, useSmartCompress } from '../../core/components'
+import { ToolLayout, DropZone, Section, Slider } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
 import { track } from '../../core/analytics'
 import { loadImageFromFile, canvasToBlob, downloadBlob, MIME_EXT, blobExt, formatBytes } from '../../core/utils/image'
@@ -20,7 +20,6 @@ export default function ConvertTool() {
   const [warn, setWarn] = useState('')
   const [tip, setTip] = useState('')
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const c = useSmartCompress()
 
   useInboxHandler(onFile)
 
@@ -48,12 +47,10 @@ export default function ConvertTool() {
     if (!canvasRef.current) return
     setTip('')
     try {
-      let blob = await canvasToBlob(canvasRef.current, fmt, lossy ? quality / 100 : undefined)
-      const orig = blob.size
-      blob = await c.run(blob)
+      const blob = await canvasToBlob(canvasRef.current, fmt, lossy ? quality / 100 : undefined)
       const ext = blobExt(blob)
       downloadBlob(blob, `${name.replace(/\.[^.]+$/, '')}.${ext}`)
-      setTip(`导出 ${formatBytes(orig)}${c.compress ? ` → 智能压缩 ${formatBytes(blob.size)}` : ''}`)
+      setTip(`导出 ${formatBytes(blob.size)}`)
     } catch (e) {
       setWarn(`当前浏览器不支持导出 ${fmt.split('/')[1].toUpperCase()} 格式（多见于 Safari）。建议改用 Chrome，或选择 PNG/WEBP。`)
     }
@@ -100,7 +97,6 @@ export default function ConvertTool() {
         <button className="btn primary block" disabled={!img} onClick={download}>
           ⬇ 导出 {fmt.split('/')[1].toUpperCase()}
         </button>
-        <CompressControls compress={c.compress} setCompress={c.setCompress} quality={c.quality} setQuality={c.setQuality} />
         {tip && <div className="hint">{tip}</div>}
         {warn && <div className="hint" style={{ color: '#b91c1c' }}>{warn}</div>}
       </div>

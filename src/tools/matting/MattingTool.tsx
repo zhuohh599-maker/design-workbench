@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { removeBackground } from '@imgly/background-removal'
 import JSZip from 'jszip'
-import { ToolLayout, DropZone, Section, CompressControls, useSmartCompress } from '../../core/components'
+import { ToolLayout, DropZone, Section } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
 import { track } from '../../core/analytics'
 import { formatBytes, downloadBlob, blobExt } from '../../core/utils/image'
@@ -51,7 +51,6 @@ export default function MattingTool() {
   const lassoPtsRef = useRef<{ x: number; y: number }[]>([])
   const lassoCursorRef = useRef<{ x: number; y: number } | null>(null)
   const origDataRef = useRef<ImageData | null>(null) // 原图像素缓存，供魔棒取样
-  const c = useSmartCompress()
 
   // 把原图与蒙版合成到显示画布（可选叠加原图参考 / 蒙版预览 / 套索预览）
   function compose(overlayMask = showMask) {
@@ -390,14 +389,9 @@ export default function MattingTool() {
     compose(false)
     const blob = await new Promise<Blob | null>((res) => view.toBlob(res, 'image/png'))
     if (!blob) return
-    let out = blob
-    const orig = out.size
-    out = await c.run(out)
-    const ext = blobExt(out)
-    downloadBlob(out, `${origName.replace(/\.[^.]+$/, '')}-nocutout.${ext}`)
-    setTip(
-      `${c.compress ? `智能压缩 ${formatBytes(orig)} → ${formatBytes(out.size)}` : `已导出 ${formatBytes(out.size)}`}`,
-    )
+    const ext = blobExt(blob)
+    downloadBlob(blob, `${origName.replace(/\.[^.]+$/, '')}-nocutout.${ext}`)
+    setTip(`已导出 ${formatBytes(blob.size)}`)
   }
 
   // 拆分元素：基于当前结果图的透明区域，做 4-连通区域检测，为每个独立元素裁剪为单张透明 PNG
@@ -799,12 +793,6 @@ export default function MattingTool() {
               <button className="btn primary block" style={{ marginTop: 12 }} onClick={download}>
                 ⬇ 导出透明 PNG
               </button>
-              <CompressControls
-                compress={c.compress}
-                setCompress={c.setCompress}
-                quality={c.quality}
-                setQuality={c.setQuality}
-              />
               {tip && <div className="hint">{tip}</div>}
             </>
           ) : (

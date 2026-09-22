@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { ToolLayout, DropZone, Section, Slider, CompressControls, useSmartCompress } from '../../core/components'
+import { ToolLayout, DropZone, Section, Slider } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
 import { track } from '../../core/analytics'
 import { loadImageFromFile, canvasToBlob, downloadBlob, blobExt, formatBytes, drawCover, drawContain } from '../../core/utils/image'
@@ -18,7 +18,6 @@ export default function ResizeTool() {
   const [fit, setFit] = useState<Fit>('cover')
   const [tip, setTip] = useState('')
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const c = useSmartCompress()
 
   useInboxHandler(onFile)
 
@@ -69,12 +68,10 @@ export default function ResizeTool() {
 
   async function download() {
     if (!canvasRef.current) return
-    let blob = await canvasToBlob(canvasRef.current, 'image/png')
-    const orig = blob.size
-    blob = await c.run(blob)
+    const blob = await canvasToBlob(canvasRef.current, 'image/png')
     const ext = blobExt(blob)
     downloadBlob(blob, `${name.replace(/\.[^.]+$/, '')}-${w}x${h}.${ext}`)
-    setTip(`导出 ${formatBytes(orig)}${c.compress ? ` → 智能压缩 ${formatBytes(blob.size)}` : ''}`)
+    setTip(`导出 ${formatBytes(blob.size)}`)
   }
 
   return (
@@ -127,7 +124,6 @@ export default function ResizeTool() {
         <button className="btn primary block" disabled={!img} onClick={download}>
           ⬇ 导出图片
         </button>
-        <CompressControls compress={c.compress} setCompress={c.setCompress} quality={c.quality} setQuality={c.setQuality} />
         {tip && <div className="hint">{tip}</div>}
         <div className="hint">默认以 PNG 输出保留透明通道；如需 JPG 请在「格式转换」中另存。</div>
       </div>

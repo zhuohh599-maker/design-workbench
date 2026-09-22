@@ -3,12 +3,12 @@ import type { ToolDef } from './types'
 import {
   ResizeIcon,
   ConvertIcon,
-  CompressIcon,
   MattingIcon,
   AnimakerIcon,
   ChromakeyIcon,
   RoundedIcon,
   VectorizeIcon,
+  PsdIcon,
 } from './icons'
 
 /**
@@ -40,15 +40,6 @@ export const tools: ToolDef[] = [
     group: '图片处理',
     enabled: true,
     component: lazy(() => import('../tools/convert/ConvertTool')),
-  },
-  {
-    id: 'compress',
-    name: '智能压缩',
-    icon: CompressIcon,
-    description: '压缩 JPG / PNG / GIF 体积',
-    group: '图片处理',
-    enabled: true,
-    component: lazy(() => import('../tools/compress/CompressTool')),
   },
   {
     id: 'rounded',
@@ -94,6 +85,15 @@ export const tools: ToolDef[] = [
     group: '视频处理',
     enabled: true,
     component: lazy(() => import('../tools/chromakey/ChromakeyVideoTool')),
+  },
+  {
+    id: 'psdcompress',
+    name: 'PSD/通用压缩',
+    icon: PsdIcon,
+    description: 'ImageMagick 读 PSD/PDF/SVG/HEIC，导出 WebP/AVIF/JPG',
+    group: '通用格式',
+    enabled: true,
+    component: lazy(() => import('../tools/psdcompress/PsdCompressTool')),
   },
 ]
 

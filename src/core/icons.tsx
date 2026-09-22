@@ -23,12 +23,6 @@ export const ConvertIcon: FC<IconProps> = (props) => (
   </svg>
 )
 
-export const CompressIcon: FC<IconProps> = (props) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M8 8L4 4M4 4h4M4 4v4M16 16l4 4M20 20h-4M20 20v-4" />
-  </svg>
-)
-
 export const MattingIcon: FC<IconProps> = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M12 2l2.5 5.5L20 10l-5.5 2.5L12 18l-2.5-5.5L4 10l5.5-2.5L12 2z" />
@@ -61,6 +55,15 @@ export const VectorizeIcon: FC<IconProps> = (props) => (
     <path d="M3 18C7 6 17 6 21 18" />
     <circle cx="3" cy="18" r="1.6" fill="currentColor" stroke="none" />
     <circle cx="21" cy="18" r="1.6" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+export const PsdIcon: FC<IconProps> = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M3 9h18" />
+    <path d="M7 13h3M7 16h3M8.5 13v3" />
+    <path d="M14 13h4M16 13v3" />
   </svg>
 )
 

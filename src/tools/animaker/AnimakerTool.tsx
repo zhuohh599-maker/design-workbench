@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { ToolLayout, DropZone, Section, Slider, CompressControls, useSmartCompress, usePasteImport } from '../../core/components'
+import { ToolLayout, DropZone, Section, Slider, usePasteImport } from '../../core/components'
 import { loadImageFromFile, downloadBlob, blobExt, formatBytes } from '../../core/utils/image'
 import { encodeApng, type GifFrame } from '../../core/utils/gif'
 import { track } from '../../core/analytics'
@@ -166,7 +166,6 @@ export default function AnimakerTool() {
   const [progress, setProgress] = useState(0)
   const [addKind, setAddKind] = useState<EffectKind>('pulse')
   const [dither, setDither] = useState(false)
-  const c = useSmartCompress()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const offRef = useRef<Offscreen | null>(null)
   const playRef = useRef(false)
@@ -448,14 +447,11 @@ export default function AnimakerTool() {
           transfer,
         )
       })
-      setTip('智能压缩中…')
-      setProgress(95)
-      let out = await c.run(blob)
       setProgress(100)
-      const ext = blobExt(out)
-      downloadBlob(out, `animaker-${boardW}x${boardH}${bg === 'transparent' ? '-alpha' : ''}.${ext}`)
+      const ext = blobExt(blob)
+      downloadBlob(blob, `animaker-${boardW}x${boardH}${bg === 'transparent' ? '-alpha' : ''}.${ext}`)
       setTipKind('success')
-      setTip(`GIF 导出完成：${frames.length} 帧 · ${formatBytes(out.size)}${c.compress ? ' · 已智能压缩' : ''}（经 APNG→GIF 转码，仍为 256 色，需真彩请用 APNG）`)
+      setTip(`GIF 导出完成：${frames.length} 帧 · ${formatBytes(blob.size)}（经 APNG→GIF 转码，仍为 256 色，需真彩请用 APNG）`)
     } catch (e) {
       setTipKind('error')
       setTip('导出失败：' + (e as Error).message)
@@ -473,15 +469,12 @@ export default function AnimakerTool() {
     try {
       const frames = collectFrames()
       setProgress(50)
-      let blob = encodeApng({ width: boardW, height: boardH, frames, cnum: 0 })
-      setTip('智能压缩中…')
-      setProgress(80)
-      blob = await c.run(blob)
+      const blob = encodeApng({ width: boardW, height: boardH, frames, cnum: 0 })
       setProgress(100)
       const ext = blobExt(blob)
       downloadBlob(blob, `animaker-${boardW}x${boardH}${bg === 'transparent' ? '-alpha' : ''}.${ext}`)
       setTipKind('success')
-      setTip(`APNG 导出完成：${frames.length} 帧 · ${formatBytes(blob.size)} · 真彩色透明${c.compress ? ' · 已智能压缩' : ''}`)
+      setTip(`APNG 导出完成：${frames.length} 帧 · ${formatBytes(blob.size)} · 真彩色透明`)
     } catch (e) {
       setTipKind('error')
       setTip('导出失败：' + (e as Error).message)
@@ -619,7 +612,6 @@ export default function AnimakerTool() {
             <input type="checkbox" checked={dither} onChange={(e) => setDither(e.target.checked)} />
             抖动（关闭更平滑；开启保留半透明羽化边缘的小点）
           </label>
-          <CompressControls compress={c.compress} setCompress={c.setCompress} quality={c.quality} setQuality={c.setQuality} />
           <button className="btn primary block" disabled={layers.length === 0 || busy} onClick={exportGif}>
             {busy ? '导出中…' : '⬇ 导出 GIF'}
           </button>

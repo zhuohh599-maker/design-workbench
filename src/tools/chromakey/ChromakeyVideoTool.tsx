@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { ToolLayout, Section, Slider, CompressControls, useSmartCompress } from '../../core/components'
+import { ToolLayout, Section, Slider } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
 import { track } from '../../core/analytics'
 import { downloadBlob, blobExt, formatBytes } from '../../core/utils/image'
@@ -89,7 +89,6 @@ export default function ChromakeyVideoTool() {
   const [tip, setTip] = useState('')
   const [progress, setProgress] = useState(0)
   const [dither, setDither] = useState(true)
-  const c = useSmartCompress()
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const srcCanvas = useRef<HTMLCanvasElement | null>(null)
@@ -300,11 +299,10 @@ export default function ChromakeyVideoTool() {
     setProgress(0)
     try {
       const frames = await collectFrames()
-      let blob = encodeGif({ width: outW, height: outH, frames, transparent: true, paletteSize: 256, dither })
-      blob = await c.run(blob)
+      const blob = encodeGif({ width: outW, height: outH, frames, transparent: true, paletteSize: 256, dither })
       const ext = blobExt(blob)
       downloadBlob(blob, `chromakey-${outW}x${outH}.${ext}`)
-      setTip(`GIF 导出完成：${frames.length} 帧 · ${formatBytes(blob.size)} · 透明 GIF${c.compress ? ' · 已智能压缩' : ''}`)
+      setTip(`GIF 导出完成：${frames.length} 帧 · ${formatBytes(blob.size)} · 透明 GIF`)
     } catch (e) {
       setTip('导出失败：' + (e as Error).message)
     } finally {
@@ -319,11 +317,10 @@ export default function ChromakeyVideoTool() {
     setProgress(0)
     try {
       const frames = await collectFrames()
-      let blob = encodeApng({ width: outW, height: outH, frames, cnum: 0 })
-      blob = await c.run(blob)
+      const blob = encodeApng({ width: outW, height: outH, frames, cnum: 0 })
       const ext = blobExt(blob)
       downloadBlob(blob, `chromakey-${outW}x${outH}.${ext}`)
-      setTip(`APNG 导出完成：${frames.length} 帧 · ${formatBytes(blob.size)} · 真彩色透明${c.compress ? ' · 已智能压缩' : ''}`)
+      setTip(`APNG 导出完成：${frames.length} 帧 · ${formatBytes(blob.size)} · 真彩色透明`)
     } catch (e) {
       setTip('导出失败：' + (e as Error).message)
     } finally {
@@ -455,7 +452,6 @@ export default function ChromakeyVideoTool() {
               <div className="field"><label>起始(s)</label><input type="number" step={0.1} min={0} value={trimStart} onChange={(e) => setTrimStart(Number(e.target.value))} /></div>
               <div className="field"><label>结束(s)</label><input type="number" step={0.1} min={0} value={trimEnd} onChange={(e) => setTrimEnd(Number(e.target.value))} /></div>
             </div>
-            <CompressControls compress={c.compress} setCompress={c.setCompress} quality={c.quality} setQuality={c.setQuality} />
             <button className="btn primary block" disabled={busy} onClick={exportGif}>⬇ 导出 GIF</button>
             <button className="btn block" disabled={busy} onClick={exportApng} style={{ marginTop: 8 }}>⬇ 导出 APNG</button>
             <div className="hint" style={{ marginTop: 8 }}>需要真彩色透明边缘时选 APNG。</div>

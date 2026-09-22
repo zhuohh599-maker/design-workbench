@@ -6,6 +6,11 @@ import react from '@vitejs/plugin-react'
 // 可在此打开 server.headers 的 COOP/COEP 配置（见注释）。
 export default defineConfig({
   plugins: [react()],
+  // @imagemagick/magick-wasm 的 wasm 模块会被 Vite 依赖预构建器破坏（报 Invalid URL / wasm fetch 失败），
+  // 按官方建议把该包排除出 optimizeDeps。
+  optimizeDeps: {
+    exclude: ['@imagemagick/magick-wasm'],
+  },
   server: {
     host: true,
     port: 5173,
