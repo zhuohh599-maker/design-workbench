@@ -2,7 +2,6 @@ import { Suspense, useState } from 'react'
 import { toolsByGroup, tools } from './core/registry'
 import { DropZone } from './core/components'
 import { InboxProvider, PanelDropZone } from './core/inbox'
-import { PaletteIcon } from './core/icons'
 
 function Loader() {
   return <div className="loader">加载工具组件中…</div>
@@ -19,7 +18,7 @@ export function App({ compact = false }: { compact?: boolean }) {
       <div className={`app${compact ? ' app--compact' : ''}`}>
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
         <div className="brand">
-          <PaletteIcon className="brand-mark" />
+          <img src="/logo.png" className="brand-mark" alt="设计工作台" draggable={false} />
           <div className="brand-text">
             <div className="brand-title">设计工作台</div>
             <div className="brand-sub">Design Workbench</div>
@@ -38,7 +37,6 @@ export function App({ compact = false }: { compact?: boolean }) {
         <nav className="nav">
           {Object.entries(toolsByGroup).map(([group, list]) => (
             <div className="nav-group" key={group}>
-              <div className="nav-group-title">{group}</div>
               {list.map((t) => {
                 const Icon = t.icon
                 return (

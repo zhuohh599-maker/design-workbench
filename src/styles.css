@@ -63,10 +63,11 @@ body {
   justify-content: center;
 }
 .brand-mark {
-  width: 26px;
-  height: 26px;
-  color: var(--accent);
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
   flex: 0 0 auto;
+  user-select: none;
 }
 .brand-text {
   flex: 1;
