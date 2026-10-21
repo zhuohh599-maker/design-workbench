@@ -1,11 +1,93 @@
 import { useState, useRef, useEffect } from 'react'
-import { removeBackground } from '@imgly/background-removal'
 import JSZip from 'jszip'
 import { ToolLayout, DropZone, Section } from '../../core/components'
 import { useInboxHandler } from '../../core/inbox'
 import { track } from '../../core/analytics'
 import { formatBytes, downloadBlob, blobExt } from '../../core/utils/image'
 import { ACCEPT_IMAGES } from '../../core/types'
+
+/**
+ * 模型策略：首次使用从官方 CDN 下载（浏览器缓存，之后离线可用）。
+ * 扩展侧推理必须放在「沙箱页」里跑：MV3 扩展页 CSP 禁止 eval（imgly 依赖的
+ * ndarray 运行时用 new Function 编译张量构造器）也禁止 blob:/远程脚本（ort
+ * 加载器 .mjs 需动态 import），而沙箱页 CSP 可按需放行这三者，且 CDN 返回
+ * access-control-allow-origin: *，沙箱（null origin）可直接下载模型。
+ * 网页版无 CSP 限制，直接调用。
+ */
+const isExtension =
+  typeof location !== 'undefined' && location.protocol === 'chrome-extension:'
+
+type ProgressCb = (key: string, current: number, total: number) => void
+
+let sandboxFrame: HTMLIFrameElement | null = null
+let sandboxSeq = 0
+
+function ensureSandboxFrame(): Promise<HTMLIFrameElement> {
+  if (sandboxFrame) return Promise.resolve(sandboxFrame)
+  return new Promise((resolve, reject) => {
+    const getURL = (globalThis as Record<string, any>).chrome?.runtime?.getURL
+    if (!getURL) return reject(new Error('无法定位沙箱页'))
+    const frame = document.createElement('iframe')
+    frame.style.display = 'none'
+    frame.src = getURL('extension/sandbox.html')
+    frame.addEventListener(
+      'load',
+      () => {
+        sandboxFrame = frame
+        resolve(frame)
+      },
+      { once: true },
+    )
+    frame.addEventListener('error', () => reject(new Error('沙箱页加载失败')), { once: true })
+    document.body.appendChild(frame)
+  })
+}
+
+function removeBackgroundInSandbox(
+  file: Blob,
+  onProgress: ProgressCb,
+  model: string,
+): Promise<Blob> {
+  return ensureSandboxFrame().then(
+    (frame) =>
+      new Promise<Blob>((resolve, reject) => {
+        const id = ++sandboxSeq
+        const onMsg = (ev: MessageEvent) => {
+          if (ev.source !== frame.contentWindow) return
+          const d = ev.data as Record<string, any>
+          if (!d || d.id !== id) return
+          if (d.type === 'matting-progress') {
+            onProgress(d.key as string, d.current as number, d.total as number)
+          } else if (d.type === 'matting-result') {
+            window.removeEventListener('message', onMsg)
+            resolve(d.blob as Blob)
+          } else if (d.type === 'matting-error') {
+            window.removeEventListener('message', onMsg)
+            reject(new Error(d.message as string))
+          }
+        }
+        window.addEventListener('message', onMsg)
+        frame.contentWindow!.postMessage({ type: 'matting-run', id, file, model }, '*')
+      }),
+  )
+}
+
+async function runMatting(
+  file: Blob,
+  onProgress: ProgressCb,
+  model: string,
+): Promise<Blob> {
+  if (model === 'birefnet') {
+    const { runBiRefNet } = await import('../../core/matting/birefnet')
+    return runBiRefNet(file, onProgress)
+  }
+  if (isExtension) return removeBackgroundInSandbox(file, onProgress, model)
+  const { removeBackground } = await import('@imgly/background-removal')
+  return removeBackground(file, {
+    output: { format: 'image/png' },
+    progress: onProgress,
+  })
+}
 
 type EditMode = 'brush' | 'wand' | 'lasso'
 
@@ -28,6 +110,7 @@ export default function MattingTool() {
   const [origBytes, setOrigBytes] = useState(0)
   const [tip, setTip] = useState('')
   const [hasResult, setHasResult] = useState(false)
+  const [model, setModel] = useState<'standard' | 'birefnet'>('standard')
   const [mode, setMode] = useState<EditMode>('brush')
   const [brush, setBrush] = useState(30)
   const [showMask, setShowMask] = useState(false)
@@ -321,6 +404,7 @@ export default function MattingTool() {
     setStep('准备模型…')
     setOrigName(file.name)
     setOrigBytes(file.size)
+    lastFileRef.current = file
     const srcUrl = URL.createObjectURL(file)
     setSrc(srcUrl)
 
@@ -335,19 +419,19 @@ export default function MattingTool() {
 
     setBusy(true)
     try {
-      const blob = await removeBackground(file, {
-        output: { format: 'image/png' },
-        progress: (key: string, current: number, total: number) => {
-          const p = total ? Math.round((current / total) * 100) : 0
-          setProgress(p)
-          const map: Record<string, string> = {
-            fetch: '下载模型',
-            compute: 'AI 推理去背景',
-            pack: '生成透明图',
-          }
-          setStep(map[key] ?? key)
-        },
-      })
+      const blob = await runMatting(
+        file,
+        (key, current, total) => {
+        const p = total ? Math.round((current / total) * 100) : 0
+        setProgress(p)
+        let step = key
+        if (key.startsWith('fetch')) step = '下载模型'
+        else if (key === 'compute') step = 'AI 推理去背景'
+        else if (key === 'pack') step = '生成透明图'
+        setStep(step)
+      },
+        model,
+      )
       const resImg = await loadImage(URL.createObjectURL(blob))
       // 始终使用原图真实像素尺寸，避免被 display width/height 或 EXIF 方向影响比例
       const sc = document.createElement('canvas')
@@ -375,7 +459,14 @@ export default function MattingTool() {
       setHasResult(true)
       requestAnimationFrame(() => compose())
     } catch (e) {
-      setErr('抠图失败：' + (e as Error).message + '\n（首次使用需联网下载 AI 模型，请确认网络畅通）')
+      console.error('[matting] 原始错误：', e)
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === 'string'
+            ? e
+            : JSON.stringify(e) ?? String(e)
+      setErr('抠图失败：' + msg + '\n（首次使用需联网下载 AI 模型，请确认网络畅通）')
     } finally {
       setBusy(false)
       setStep('')
@@ -521,6 +612,16 @@ export default function MattingTool() {
     brushEraseRef.current = brushErase
   }, [brushErase])
 
+  // 切换模型后自动用原图重跑抠图（否则用户必须重新上传才能生效）
+  const modelRef = useRef(model)
+  const lastFileRef = useRef<File | null>(null)
+  useEffect(() => {
+    if (modelRef.current === model) return
+    modelRef.current = model
+    if (lastFileRef.current) onFile(lastFileRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model])
+
   return (
     <ToolLayout
       title="AI 抠图"
@@ -568,6 +669,27 @@ export default function MattingTool() {
       </div>
 
       <div className="panel">
+        <Section title="抠图模型">
+          <div className="seg">
+            <button
+              className={`seg-btn ${model === 'standard' ? 'on' : ''}`}
+              onClick={() => setModel('standard')}
+            >
+              标准（快）
+            </button>
+            <button
+              className={`seg-btn ${model === 'birefnet' ? 'on' : ''}`}
+              onClick={() => setModel('birefnet')}
+            >
+              高精度 BiRefNet
+            </button>
+          </div>
+          <div className="hint" style={{ marginTop: 8 }}>
+            高精度版首次需下载约 210MB 模型（仅一次，之后浏览器缓存），发丝 / 透明物体 /
+            复杂轮廓更干净；标准版体积更小、速度更快。
+          </div>
+        </Section>
+
         <Section title="编辑方式">
           {hasResult ? (
             <div className="seg">

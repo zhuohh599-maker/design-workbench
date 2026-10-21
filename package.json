@@ -6,8 +6,8 @@
   "description": "设计小工具集合工作台（浏览器版，纯前端本地处理）",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:ext": "vite build --config vite.ext.config.ts",
+    "build": "node scripts/fetch-model.mjs && vite build",
+    "build:ext": "vite build --config vite.ext.config.ts && vite build --config vite.ext.sandbox.config.ts",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },

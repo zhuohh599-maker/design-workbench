@@ -6,3 +6,7 @@ dist-ext
 *.local
 .DS_Store
 .workbuddy/
+# Vite 临时缓存文件
+*.timestamp-*.mjs
+# BiRefNet 模型按需构建期下载，不进 git
+public/models/*.onnx

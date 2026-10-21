@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>matting-sandbox</title>
+    <!--
+      MV3 沙箱页：null origin，CSP 见 manifest 的 sandbox 字段。
+      推理代码（含 @imgly 全部依赖）由构建脚本 inlineSandboxMatting 整体内联进本页，
+      以绕开「沙箱页跨源加载扩展脚本被 CORS 拦截 / 'self' 解析不到 chrome-extension」的限制。
+      运行时零 fetch、零跨源加载，模型在沙箱内从 CDN 首次下载（浏览器缓存）。
+    -->
+  </head>
+  <body>
+    <!--__MATTING_CODE__-->
+  </body>
+</html>

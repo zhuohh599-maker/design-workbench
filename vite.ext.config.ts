@@ -20,11 +20,10 @@ function copyManifest(): Plugin {
   }
 }
 
-// 扩展构建：复用同一套 React 工具代码，额外产出
-//   - sidepanel.html + assets   （侧边栏工作台，compact 模式）
-//   - background.js             （service worker：跨域抓图 / 右键菜单 / 拉起侧边栏）
-//   - content.js                （常驻浮球）
-// 网页版（Netlify）仍用 vite.config.ts 的 `npm run build`，互不影响。
+/**
+ * 扩展应用构建：侧边栏工作台 / service worker / content script。
+ * 沙箱推理脚本由 vite.ext.sandbox.config.ts 单独构建并内联进 sandbox.html。
+ */
 export default defineConfig({
   plugins: [react(), copyManifest()],
   root: __dirname,

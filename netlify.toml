@@ -5,3 +5,11 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+# BiRefNet 高精度模型（约 210MB）自托管在 /models，供网页版同源、扩展沙箱跨域下载。
+# 放开 CORS 让 chrome-extension:// 沙箱也能拉取；长缓存降低重复带宽。
+[[headers]]
+  for = "/models/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Cache-Control = "public, max-age=31536000, immutable"
