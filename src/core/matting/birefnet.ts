@@ -1,34 +1,42 @@
 /**
  * BiRefNet-lite 本地推理（浏览器 / 扩展沙箱通用）。
  *
- * 模型：YheChen/bgremover-onnx —— BiRefNet_lite（Swin-Tiny）的 ONNX 导出，
- *       MIT 协议（继承自 ZhengPeng7/BiRefNet），作者明确「cleared for commercial use」。
- *       已重写 DeformConv 为 GridSample 等价实现，可在 onnxruntime-web 的 wasm EP 跑通，
- *       无需 WebGPU。约 210MB fp32，首次从本站自托管域名下载（/models 同源，或线上域名跨域），
- *       之后走 Cache Storage 本地缓存，离线也能用。huggingface.co 仅作最后兜底。
+ * 模型：studioludens/birefnet-lite-512 —— BiRefNet_lite（Swin-Tiny）的 ONNX 导出，512×512 输入，
+ *       MIT 协议，浏览器 onnxruntime-web wasm 可直接跑通（1024 版在 wasm 4GB 堆会 OOM，故用 512）。
+ *       模型随产物打包：网页版同源 /models，扩展走 chrome-extension://models，运行时不再外网下载；
+ *       仅当本地缺失时回退到线上域名 / huggingface。首次下载后网页版走 Cache Storage 缓存。
  *
- * 推理引擎：onnxruntime-web（与 @imgly 同源，扩展沙箱构建里已别名到 ort.min.mjs）。
- *       wasm 从 jsDelivr CDN 加载（CORS *）。
+ * 推理引擎：onnxruntime-web（与 @imgly 同源，扩展沙箱构建里已内联）。
+ *       wasm 运行时：网页版走 jsDelivr CDN（已缓存）；扩展版走本地 chrome-extension://ort/（离线）。
  *
  * I/O（与上游 README 一致）：
- *   input  : [1,3,1024,1024] float32，RGB，ImageNet 归一化，拉伸(非等比)到 1024²
- *   output : [1,1,1024,1024] float32 logits，需自行 sigmoid 得到 [0,1] alpha
+ *   input  : [1,3,512,512] float32，RGB，ImageNet 归一化，拉伸(非等比)到 512²
+ *   output : [1,1,512,512] float32 logits，需自行 sigmoid 得到 [0,1] alpha
  */
 
-// 模型下载源（按优先级）。hf-mirror.com 实测会 308 跳回 huggingface.co，jsDelivr 未托管该模型，
-// 故改为本站自托管：网页版同源 /models/，扩展沙箱走线上域名。huggingface.co 仅作最后兜底。
-const MODEL_LOCAL = '/models/birefnet-lite-web.onnx' // 网页版同源（本地预览与线上均可）
-const MODEL_NETLIFY = 'https://design-workbench.netlify.app/models/birefnet-lite-web.onnx' // 扩展沙箱跨域
-const MODEL_HF = 'https://huggingface.co/YheChen/bgremover-onnx/resolve/main/birefnet-lite-web.onnx'
-const ORT_WASM_PATH = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/'
-const SIZE = 1024
+// 模型随产物打包，运行时优先本地路径，不再每次外网下载。
+const MODEL_FILE = 'birefnet-lite-512.onnx'
+const MODEL_NETLIFY = 'https://design-workbench.netlify.app/models/birefnet-lite-512.onnx' // 兜底跨域
+const MODEL_HF = 'https://hf-mirror.com/studioludens/birefnet-lite-512/resolve/main/onnx/model.onnx' // 最后兜底
+const ORT_WASM_CDN = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/'
+const SIZE = 512
 
-// 扩展环境（chrome-extension://）无法用同源相对路径，走线上域名；网页版优先同源路径。
+// 扩展环境（普通扩展页与沙箱 iframe 的 location 协议均为 chrome-extension:）走本地打包资源，
+// 网页版走同源 /models 与 CDN。沙箱内 chrome.runtime 不可用，故用 location.protocol 判断。
+let IS_EXTENSION = false
+try {
+  IS_EXTENSION = typeof location !== 'undefined' && location.protocol === 'chrome-extension:'
+} catch {
+  IS_EXTENSION = false
+}
 function getModelSources(): string[] {
-  if (typeof location !== 'undefined' && location.protocol === 'chrome-extension:') {
-    return [MODEL_NETLIFY, MODEL_HF]
-  }
-  return [MODEL_LOCAL, MODEL_NETLIFY, MODEL_HF]
+  // 相对路径 /models 在网页版解析为同源、在扩展解析为 chrome-extension:// 本地，均无需外网下载；
+  // 仅当本地缺失时回退到线上域名 / huggingface。
+  return [`/models/${MODEL_FILE}`, MODEL_NETLIFY, MODEL_HF]
+}
+function getWasmPaths(): string {
+  // 扩展内联打包 wasm（离线可用）；网页版走 jsDelivr CDN（已缓存）
+  return IS_EXTENSION ? '/ort/' : ORT_WASM_CDN
 }
 const MEAN = [0.485, 0.456, 0.406]
 const STD = [0.229, 0.224, 0.225]
@@ -91,7 +99,7 @@ function decodeToCanvas(file: Blob): Promise<HTMLCanvasElement> {
   })
 }
 
-// 模型 210MB，HTTP 缓存对大文件不可靠（实测 Chrome 不缓存），用 Cache Storage 显式缓存
+// 模型较大（约 183MB），HTTP 缓存对大文件不可靠（实测 Chrome 不缓存），用 Cache Storage 显式缓存
 const CACHE_NAME = 'birefnet-model-v1'
 
 async function getModelData(onProgress: ProgressCb): Promise<Uint8Array> {
@@ -142,7 +150,7 @@ export async function runBiRefNet(file: Blob, onProgress: ProgressCb): Promise<B
   const ort: any = ortMod.default ?? ortMod
   if (!ort?.InferenceSession) throw new Error('[初始化] onnxruntime-web 加载失败')
   // 单线程，避免依赖 SharedArrayBuffer（网页版与扩展沙箱均未开启跨源隔离）
-  ort.env.wasm.wasmPaths = ORT_WASM_PATH
+  ort.env.wasm.wasmPaths = getWasmPaths()
   ort.env.wasm.numThreads = 1
 
   onProgress('compute', 0, 1)
@@ -159,7 +167,7 @@ export async function runBiRefNet(file: Blob, onProgress: ProgressCb): Promise<B
   const H = src.height
   const srcData = src.getContext('2d')!.getImageData(0, 0, W, H).data
 
-  // 预处理：拉伸到 1024² + ImageNet 归一化，HWC -> CHW
+  // 预处理：拉伸到 512² + ImageNet 归一化，HWC -> CHW
   const prep = document.createElement('canvas')
   prep.width = SIZE
   prep.height = SIZE

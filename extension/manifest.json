@@ -33,6 +33,10 @@
     {
       "resources": ["sidepanel.html", "assets/*"],
       "matches": ["<all_urls>"]
+    },
+    {
+      "resources": ["models/*", "ort/*"],
+      "matches": ["<all_urls>"]
     }
   ]
 }
