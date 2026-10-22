@@ -23,7 +23,7 @@
   "permissions": ["sidePanel", "contextMenus", "storage", "activeTab", "scripting"],
   "host_permissions": ["<all_urls>"],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'",
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
     "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://staticimgly.com chrome-extension://*; object-src 'self' blob: data:; connect-src 'self' blob: data: https://staticimgly.com https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net https://design-workbench.netlify.app chrome-extension://*; img-src 'self' blob: data: https://staticimgly.com; style-src 'self' 'unsafe-inline'"
   },
   "sandbox": {
