@@ -57,7 +57,14 @@ export async function convertWithMagick(
       })
     })
   } catch (e) {
-    throw new Error(`该格式无法被 ImageMagick 处理（可能编解码器未内置）：${(e as Error).message}`)
+    const msg = e instanceof Error ? e.message : String(e)
+    // wasm 内部内存不足 / 大文件解码超限，给出可读提示而非裸抛
+    if (/array buffer|allocation failed|out of memory|abort/i.test(msg)) {
+      throw new Error(
+        '浏览器内存不足：文件解码后超出可用内存。可关闭其他标签页后重试，或先在 Photoshop 里缩小画布尺寸再导出。',
+      )
+    }
+    throw new Error(`该格式无法被 ImageMagick 处理（可能编解码器未内置）：${msg}`)
   }
 
   if (!result.data || result.data.length === 0) {
